@@ -41,8 +41,14 @@ h1 {
     font-size: 1.2em;
 }
 
+#orderList {
+    overflow-x: auto; /* Allow horizontal scrolling for the table */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
 #orderList table {
     width: 100%;
+    min-width: 600px; /* Ensure table is wide enough to scroll if needed */
     border-collapse: collapse;
 }
 
@@ -52,6 +58,7 @@ h1 {
     text-align: left;
     font-size: 14px;
     vertical-align: middle;
+    white-space: nowrap; /* Prevent text wrapping in table cells */
 }
 
 #orderList th {
@@ -242,4 +249,78 @@ h1 {
     color: #bbb;
     text-decoration: none;
     cursor: pointer;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* Reduce overall padding */
+    }
+
+    .search-container {
+        flex-direction: column; /* Stack search inputs vertically */
+        padding: 10px;
+    }
+
+    .search-container input,
+    .search-container select,
+    .search-container button {
+        width: 100%; /* Full width inputs */
+        box-sizing: border-box; /* Include padding in width */
+    }
+
+    .results-container {
+        grid-template-columns: 1fr; /* Single column for product cards */
+    }
+
+    .result-item {
+        flex-direction: column; /* Stack content and checkbox vertically */
+        align-items: center;
+        padding: 10px;
+    }
+
+    .card-main-content {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .card-selection-control {
+        margin-left: 0; /* Remove left margin */
+        flex-direction: row; /* Place checkbox and label side-by-side */
+        gap: 5px;
+    }
+
+    .order-summary-container {
+        padding: 10px; /* Reduce padding for order list */
+        max-height: 150px; /* Reduce max height */
+    }
+
+    #orderList th, #orderList td {
+        font-size: 12px; /* Smaller font size for table content */
+        padding: 4px 6px; /* Smaller padding */
+    }
+
+    .quantity-control input {
+        width: 40px; /* Smaller quantity input */
+    }
+
+    .quantity-control button {
+        padding: 1px 5px; /* Smaller buttons */
+        font-size: 14px;
+    }
+
+    .delete-item-btn {
+        padding: 2px 5px;
+        font-size: 10px;
+    }
+
+    .order-actions button {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    body.cart-open {
+        padding-bottom: 170px; /* Adjust body padding for smaller order list height */
+    }
 }
