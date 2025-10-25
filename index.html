@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シール受注商品一覧（米匠庵）</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>シール受注商品一覧（米匠庵）</h1>
+
+    <div class="order-summary-container">
+        <h2>発注リスト</h2>
+        <div id="orderList">リストは空です。</div>
+        <div class="order-actions">
+            <button id="copyOrderButton">リストをコピー</button>
+            <button id="clearOrderButton">リストをクリア</button>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="キーワードで検索...">
+        <select id="sanchiFilter">
+            <option value="">産地で絞り込み</option>
+        </select>
+        <select id="meigaraFilter">
+            <option value="">銘柄で絞り込み</option>
+        </select>
+        <select id="kgFilter">
+            <option value="">KGで絞り込み</option>
+        </select>
+        <select id="fukaFilter">
+            <option value="">付加で絞り込み</option>
+        </select>
+        <select id="janFilter">
+            <option value="">JAN あり/なし</option>
+            <option value="yes">あり</option>
+            <option value="no">なし</option>
+        </select>
+        <button id="resetButton">検索をリセット</button>
+    </div>
+
+    <div id="resultsCount"></div>
+    <div id="results" class="results-container"></div>
+
+    <!-- Lightbox for image zoom -->
+    <div id="lightbox" class="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <img class="lightbox-content" id="lightboxImg">
+    </div>
+
+    <script src="script_v5.js"></script>
+</body>
+</html>

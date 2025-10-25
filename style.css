@@ -1,0 +1,245 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+body.cart-open {
+    padding-bottom: 220px; /* Height of the cart */
+}
+
+h1 {
+    text-align: center;
+    color: #444;
+}
+
+.order-summary-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    padding: 15px 25px;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    transition: transform 0.3s ease-in-out;
+    transform: translateY(100%);
+}
+
+.order-summary-container.visible {
+    transform: translateY(0);
+}
+
+.order-summary-container h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+#orderList table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#orderList th, #orderList td {
+    border-bottom: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+#orderList th {
+    background-color: #f7f7f7;
+}
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.quantity-control button {
+    padding: 2px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+}
+
+.quantity-control input {
+    width: 60px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.delete-item-btn {
+    background-color: #ff4d4f;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.delete-item-btn:hover {
+    background-color: #f5222d;
+}
+
+.order-actions {
+    margin-top: 15px;
+    text-align: right;
+}
+
+.order-actions button {
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 10px;
+}
+
+#copyOrderButton {
+    background-color: #007bff;
+    color: white;
+}
+
+#clearOrderButton {
+    background-color: #6c757d;
+    color: white;
+}
+
+.search-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.search-container input,
+.search-container select,
+.search-container button {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+}
+
+.search-container input {
+    flex-grow: 1;
+}
+
+#resultsCount {
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.results-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.result-item {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.result-item.selected {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+}
+
+.card-main-content {
+    flex-grow: 1;
+}
+
+.card-main-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+.card-main-content p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.card-main-content p strong {
+    color: #555;
+}
+
+.card-selection-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-left: 15px;
+}
+
+.card-selection-control input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+}
+
+.card-selection-control label {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Lightbox styles */
+.lightbox {
+    display: none; 
+    position: fixed; 
+    z-index: 2000; 
+    padding-top: 60px; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.9);
+}
+
+.lightbox-content {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.lightbox-close:hover,
+.lightbox-close:focus {
+    color: #bbb;
+    text-decoration: none;
+    cursor: pointer;
+}
