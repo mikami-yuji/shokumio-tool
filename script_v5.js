@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const searchInput = document.getElementById('searchInput');
     const sanchiFilter = document.getElementById('sanchiFilter');
+    const shubetsu1Filter = document.getElementById('shubetsu1Filter');
     const meigaraFilter = document.getElementById('meigaraFilter');
     const kgFilter = document.getElementById('kgFilter');
     const fukaFilter = document.getElementById('fukaFilter');
@@ -16,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightboxImg');
     const lightboxClose = document.querySelector('.lightbox-close');
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
 
     // Data
     let allData = [];
@@ -62,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateFilters(data) {
         const sanchiSet = new Set(data.map(item => item['産地']).filter(Boolean));
+        const shubetsu1Set = new Set(data.map(item => item['種別１']).filter(Boolean));
         const meigaraSet = new Set(data.map(item => item['銘柄']).filter(Boolean));
         const kgSet = new Set(data.map(item => item['ＫＧ']).filter(Boolean));
         const fukaSet = new Set();
@@ -71,11 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         sanchiFilter.innerHTML = '<option value="">産地で絞り込み</option>';
+        shubetsu1Filter.innerHTML = '<option value="">種別１で絞り込み</option>';
         meigaraFilter.innerHTML = '<option value="">銘柄で絞り込み</option>';
         kgFilter.innerHTML = '<option value="">KGで絞り込み</option>';
         fukaFilter.innerHTML = '<option value="">付加で絞り込み</option>';
 
         sanchiSet.forEach(sanchi => sanchiFilter.add(new Option(sanchi, sanchi)));
+        shubetsu1Set.forEach(shubetsu1 => shubetsu1Filter.add(new Option(shubetsu1, shubetsu1)));
         meigaraSet.forEach(meigara => meigaraFilter.add(new Option(meigara, meigara)));
         kgSet.forEach(kg => kgFilter.add(new Option(kg, kg)));
         fukaSet.forEach(fuka => fukaFilter.add(new Option(fuka, fuka)));
@@ -92,6 +97,9 @@ document.addEventListener('DOMContentLoaded', () => {
             div.dataset.juchu = item['受注'];
 
             const imageUrl = item['画像'] ? item['画像'].replace('dl=0', 'raw=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com') : '';
+            const fuka1 = (item['付加'] && item['付加'] !== '―') ? item['付加'] : '';
+            const fuka2 = (item['付加2'] && item['付加2'] !== '―') ? item['付加2'] : '';
+            const fukaText = [fuka1, fuka2].filter(Boolean).join(', ');
 
             div.innerHTML = `
                 <div class="card-main-content">
@@ -100,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>産地:</strong> ${item['産地']}</p>
                     <p><strong>銘柄:</strong> ${item['銘柄']}</p>
                     <p><strong>KG:</strong> ${item['ＫＧ']}</p>
+                    ${fukaText ? `<p><strong>付加:</strong> ${fukaText}</p>` : ''}
                 </div>
                 <div class="card-selection-control">
                     <input type="checkbox" class="item-select" id="check-${item['受注']}" data-juchu="${item['受注']}" ${isSelected ? 'checked' : ''}>
@@ -153,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function filterAndDisplay() {
         const searchText = searchInput.value.toLowerCase();
         const sanchi = sanchiFilter.value;
+        const shubetsu1 = shubetsu1Filter.value;
         const meigara = meigaraFilter.value;
         const kg = kgFilter.value;
         const fuka = fukaFilter.value;
@@ -166,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             return (
                 (!sanchi || item['産地'] === sanchi) &&
+                (!shubetsu1 || item['種別１'] === shubetsu1) &&
                 (!meigara || item['銘柄'] === meigara) &&
                 (!kg || item['ＫＧ'] === kg) &&
                 matchesFuka &&
@@ -178,6 +189,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
+
+    // Scroll to top button
+    window.onscroll = function() {
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            scrollTopBtn.style.display = "block";
+        } else {
+            scrollTopBtn.style.display = "none";
+        }
+    };
+    scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    });
 
     resultsContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('product-image')) {
@@ -252,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchInput.addEventListener('input', filterAndDisplay);
     sanchiFilter.addEventListener('change', filterAndDisplay);
+    shubetsu1Filter.addEventListener('change', filterAndDisplay);
     meigaraFilter.addEventListener('change', filterAndDisplay);
     kgFilter.addEventListener('change', filterAndDisplay);
     fukaFilter.addEventListener('change', filterAndDisplay);
@@ -260,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetButton.addEventListener('click', () => {
         searchInput.value = '';
         sanchiFilter.value = '';
+        shubetsu1Filter.value = '';
         meigaraFilter.value = '';
         kgFilter.value = '';
         fukaFilter.value = '';
@@ -346,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial Load
-    fetch('./data.csv?v=' + new Date().getTime()) // Add cache-busting
+    fetch('https://mikami-yuji.github.io/shokumio-tool/data.csv?v=' + new Date().getTime()) // Fetch from GitHub Pages URL
         .then(response => {
             console.log('Fetch response received:', response);
             if (!response.ok) {
