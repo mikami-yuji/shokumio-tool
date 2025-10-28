@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         orderSummaryContainer.classList.add('visible');
         document.body.classList.add('cart-open');
 
-        let html = '<table><thead><tr><th>受注</th><th>産地</th><th>銘柄</th><th>KG</th><th>付加</th><th>数量</th><th></th></tr></thead><tbody>';
+        let html = '<table><thead><tr><th>受注</th><th>種別１</th><th>KG</th><th>産地</th><th>銘柄</th><th>付加</th><th>数量</th><th></th></tr></thead><tbody>';
         order.forEach((quantity, juchuCode) => {
             const item = allData.find(d => d['受注'] === juchuCode);
             if (item) {
@@ -140,9 +140,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `
                     <tr>
                         <td>${item['受注']}</td>
+                        <td>${item['種別１']}</td>
+                        <td>${item['ＫＧ']}</td>
                         <td>${item['産地']}</td>
                         <td>${item['銘柄']}</td>
-                        <td>${item['ＫＧ']}</td>
                         <td>${fukaText}</td>
                         <td>
                             <div class="quantity-control">
@@ -306,9 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const header = {
             juchu: '受注',
+            shubetsu1: '種別１',
+            kg: 'KG',
             sanchi: '産地',
             meigara: '銘柄',
-            kg: 'KG',
             fuka: '付加',
             quantity: '数量'
         };
@@ -316,9 +318,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const lines = [];
         const maxWidths = {
             juchu: getDisplayWidth(header.juchu),
+            shubetsu1: getDisplayWidth(header.shubetsu1),
+            kg: getDisplayWidth(header.kg),
             sanchi: getDisplayWidth(header.sanchi),
             meigara: getDisplayWidth(header.meigara),
-            kg: getDisplayWidth(header.kg),
             fuka: getDisplayWidth(header.fuka),
             quantity: getDisplayWidth(header.quantity)
         };
@@ -333,9 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const line = {
                     juchu: item['受注'],
+                    shubetsu1: item['種別１'],
+                    kg: item['ＫＧ'],
                     sanchi: item['産地'],
                     meigara: item['銘柄'],
-                    kg: item['ＫＧ'],
                     fuka: fukaText,
                     quantity: quantityText
                 };
@@ -348,17 +352,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         let textToCopy = padStr(header.juchu, maxWidths.juchu) + '  ' +
+                           padStr(header.shubetsu1, maxWidths.shubetsu1) + '  ' +
+                           padStr(header.kg, maxWidths.kg) + '  ' +
                            padStr(header.sanchi, maxWidths.sanchi) + '  ' +
                            padStr(header.meigara, maxWidths.meigara) + '  ' +
-                           padStr(header.kg, maxWidths.kg) + '  ' +
                            padStr(header.fuka, maxWidths.fuka) + '  ' +
                            header.quantity + '\n';
 
         lines.forEach(line => {
             textToCopy += padStr(line.juchu, maxWidths.juchu) + '  ' +
+                          padStr(line.shubetsu1, maxWidths.shubetsu1) + '  ' +
+                          padStr(line.kg, maxWidths.kg) + '  ' +
                           padStr(line.sanchi, maxWidths.sanchi) + '  ' +
                           padStr(line.meigara, maxWidths.meigara) + '  ' +
-                          padStr(line.kg, maxWidths.kg) + '  ' +
                           padStr(line.fuka, maxWidths.fuka) + '  ' +
                           line.quantity + '\n';
         });
