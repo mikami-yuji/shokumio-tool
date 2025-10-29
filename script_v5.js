@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const orderSummaryContainer = document.querySelector('.order-summary-container');
     const orderListContainer = document.getElementById('orderList');
     const copyOrderButton = document.getElementById('copyOrderButton');
+    const csvExportButton = document.getElementById('csvExportButton');
+    const excelExportButton = document.getElementById('excelExportButton');
     const clearOrderButton = document.getElementById('clearOrderButton');
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightboxImg');
@@ -96,24 +98,24 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = `result-item ${isSelected ? 'selected' : ''}`;
             div.dataset.juchu = item['受注'];
 
-            const imageUrl = item['画像'] ? item['画像'].replace('dl=0', 'raw=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com') : '';
             const fuka1 = (item['付加'] && item['付加'] !== '―') ? item['付加'] : '';
             const fuka2 = (item['付加2'] && item['付加2'] !== '―') ? item['付加2'] : '';
-            const fukaText = [fuka1, fuka2].filter(Boolean).join(', ');
+            const fukaTags = [fuka1, fuka2].filter(Boolean).map(tag => `<span class="tag">${tag}</span>`).join('');
+            const imageUrl = item['画像'] ? item['画像'].replace('dl=0', 'raw=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com') : '';
 
             div.innerHTML = `
-                <div class="card-main-content">
-                    ${imageUrl ? `<img src="${imageUrl}" alt="商品画像" loading="lazy" class="product-image">` : ''}
-                    <p><strong>受注:</strong> ${item['受注']}</p>
-                    <p><strong>産地:</strong> ${item['産地']}</p>
-                    <p><strong>銘柄:</strong> ${item['銘柄']}</p>
-                    <p><strong>KG:</strong> ${item['ＫＧ']}</p>
-                    ${fukaText ? `<p><strong>付加:</strong> ${fukaText}</p>` : ''}
+                <div class="card-juchu">${item['受注']}</div>
+                <div class="card-selection-indicator">✓</div>
+                ${imageUrl ? `<div class="card-image-wrapper"><img src="${imageUrl}" alt="商品画像" loading="lazy" class="product-image"></div>` : ''}
+                <div class="card-content">
+                    <h3 class="card-title">${item['銘柄']}</h3>
+                    <div class="card-meta">
+                        <span><strong>産地:</strong> ${item['産地']}</span>
+                        <span><strong>KG:</strong> ${item['ＫＧ']}</span>
+                    </div>
+                    ${fukaTags ? `<div class="card-tags">${fukaTags}</div>` : ''}
                 </div>
-                <div class="card-selection-control">
-                    <input type="checkbox" class="item-select" id="check-${item['受注']}" data-juchu="${item['受注']}" ${isSelected ? 'checked' : ''}>
-                    <label for="check-${item['受注']}">選択</label>
-                </div>
+                <input type="checkbox" class="item-select" id="check-${item['受注']}" data-juchu="${item['受注']}" ${isSelected ? 'checked' : ''} style="display: none;">
             `;
             resultsContainer.appendChild(div);
         });
@@ -204,28 +206,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     resultsContainer.addEventListener('click', (e) => {
+        const card = e.target.closest('.result-item');
+        if (!card) return; // Click was outside a card
+
+        const juchuCode = card.dataset.juchu;
+        if (!juchuCode) return;
+
+        // If the image was clicked, open the lightbox and do nothing else
         if (e.target.classList.contains('product-image')) {
             lightbox.style.display = 'block';
             lightboxImg.src = e.target.src;
+            return;
         }
-    });
 
-    resultsContainer.addEventListener('change', (e) => {
-        const target = e.target;
-        if (!target.classList.contains('item-select')) return;
+        // Otherwise, toggle the selection for the whole card
+        const checkbox = card.querySelector('.item-select');
+        if (!checkbox) return;
+
+        // Toggle state
+        const isSelected = !checkbox.checked;
         
-        const juchuCode = target.dataset.juchu;
-        if (!juchuCode) return;
-
-        const resultItem = resultsContainer.querySelector(`div[data-juchu="${juchuCode}"]`);
-
-        if (target.checked) {
+        if (isSelected) {
             order.set(juchuCode, 100); // Default quantity to 100
-            resultItem.classList.add('selected');
+            card.classList.add('selected');
         } else {
             order.delete(juchuCode);
-            resultItem.classList.remove('selected');
+            card.classList.remove('selected');
         }
+        checkbox.checked = isSelected; // Sync checkbox state
+
         updateOrderSummary();
     });
     
@@ -374,6 +383,96 @@ document.addEventListener('DOMContentLoaded', () => {
         }, () => {
             alert('クリップボードへのコピーに失敗しました。');
         });
+    });
+
+    // --- Export Functions ---
+    function getExportData() {
+        if (order.size === 0) {
+            alert('発注リストは空です。');
+            return null;
+        }
+
+        const dataToExport = [];
+        const headers = {
+            juchu: '受注',
+            shubetsu1: '種別１',
+            kg: 'KG',
+            sanchi: '産地',
+            meigara: '銘柄',
+            fuka: '付加',
+            quantity: '数量',
+            imageUrl: '画像URL'
+        };
+
+        order.forEach((quantity, juchuCode) => {
+            const item = allData.find(d => d['受注'] === juchuCode);
+            if (item) {
+                const fuka1 = (item['付加'] && item['付加'] !== '―') ? item['付加'] : '';
+                const fuka2 = (item['付加2'] && item['付加2'] !== '―') ? item['付加2'] : '';
+                const fukaText = [fuka1, fuka2].filter(Boolean).join(', ');
+                const imageUrl = item['画像'] ? item['画像'].replace('dl=0', 'raw=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com') : '';
+
+                dataToExport.push({
+                    [headers.juchu]: item['受注'],
+                    [headers.shubetsu1]: item['種別１'],
+                    [headers.kg]: item['ＫＧ'],
+                    [headers.sanchi]: item['産地'],
+                    [headers.meigara]: item['銘柄'],
+                    [headers.fuka]: fukaText,
+                    [headers.quantity]: quantity,
+                    [headers.imageUrl]: imageUrl
+                });
+            }
+        });
+
+        return dataToExport;
+    }
+
+    csvExportButton.addEventListener('click', () => {
+        const data = getExportData();
+        if (!data) return;
+
+        const headers = Object.keys(data[0]);
+        const csvRows = [headers.join(',')];
+
+        data.forEach(row => {
+            const values = headers.map(header => {
+                const escaped = ('' + row[header]).replace(/"/g, '""');
+                return `"${escaped}"`;
+            });
+            csvRows.push(values.join(','));
+        });
+
+        const csvString = csvRows.join('\n');
+        const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); // UTF-8 BOM
+        const blob = new Blob([bom, csvString], { type: 'text/csv;charset=utf-8;' });
+
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', '発注リスト.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    excelExportButton.addEventListener('click', () => {
+        const data = getExportData();
+        if (!data) return;
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, '発注リスト');
+
+        // Set column widths
+        const colWidths = [
+            { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 20 }, 
+            { wch: 20 }, { wch: 10 }, { wch: 50 }
+        ];
+        worksheet['!cols'] = colWidths;
+
+        XLSX.writeFile(workbook, '発注リスト.xlsx');
     });
 
     // Initial Load
