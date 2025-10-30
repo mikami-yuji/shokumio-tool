@@ -450,29 +450,111 @@ document.addEventListener('DOMContentLoaded', () => {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', '発注リスト.csv');
+        const timestamp = new Date().toISOString().replace(/[-:.]/g, '').replace('T', '_');
+        link.setAttribute('download', `発注リスト_${timestamp}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     });
 
-    excelExportButton.addEventListener('click', () => {
+    excelExportButton.addEventListener('click', async () => {
         const data = getExportData();
         if (!data) return;
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, '発注リスト');
+        // Disable button to prevent multiple clicks
+        excelExportButton.disabled = true;
+        excelExportButton.textContent = '作成中...';
 
-        // Set column widths
-        const colWidths = [
-            { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 20 }, 
-            { wch: 20 }, { wch: 10 }, { wch: 50 }
-        ];
-        worksheet['!cols'] = colWidths;
+        try {
+            const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(data.map(row => {
+                // Create a new object without the imageUrl for the sheet
+                const { imageUrl, ...rest } = row;
+                return rest;
+            }));
 
-        XLSX.writeFile(workbook, '発注リスト.xlsx');
+            // Set column widths
+            const colWidths = [
+                { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 20 }, 
+                { wch: 20 }, { wch: 10 }, { wch: 15 } // Added width for new '画像' column
+            ];
+            worksheet['!cols'] = colWidths;
+
+            // Add '画像' header
+            XLSX.utils.sheet_add_aoa(worksheet, [['画像']], { origin: 'H1' });
+
+            // Add images to the worksheet
+            if (!worksheet['!images']) worksheet['!images'] = [];
+
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const rowIndex = i + 2; // 1-based index, +1 for header row
+
+                // Set row height to fit the image
+                worksheet['!rows'] = worksheet['!rows'] || [];
+                worksheet['!rows'][i + 1] = { hpt: 80 }; // Set row height in points
+
+                if (row.imageUrl) {
+                    try {
+                        // Using a proxy might be necessary if there are CORS issues.
+                        // For now, we'll try a direct fetch.
+                        const response = await fetch(row.imageUrl);
+                        if (!response.ok) throw new Error(`Image fetch failed with status: ${response.status}`);
+                        
+                        const imageBlob = await response.blob();
+                        const imageBase64 = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(imageBlob);
+                        });
+
+                        const imageExt = row.imageUrl.split('.').pop().toLowerCase().split('?')[0];
+                        const imageExtension = ['png', 'jpeg', 'jpg', 'gif', 'bmp'].includes(imageExt) ? imageExt : 'jpeg';
+                        
+                        // The name of the image must be unique within the workbook
+                        const imageName = `Image${i}`;
+
+                        // Add the image to the worksheet's image collection
+                        worksheet['!images'].push({
+                            name: imageName,
+                            data: imageBase64.split(',')[1], // Base64 data without the prefix
+                            opts: { base64: true },
+                            ext: imageExtension,
+                            range: `H${rowIndex}`, // Cell where the top-left corner of the image should be
+                            hyperlinks: {
+                                Target: row.imageUrl,
+                                Tooltip: `クリックして画像を開く: ${row['銘柄']}`
+                            },
+                            fit: {
+                                // Fit the image within a 100x100 pixel box in the cell
+                                h: 75, 
+                                w: 75,
+                            },
+                        });
+
+                    } catch (imgError) {
+                        console.error(`Could not fetch or embed image for ${row['受注']}:`, imgError);
+                        // If image loading fails, write an error message in the cell
+                        XLSX.utils.sheet_add_aoa(worksheet, [['画像エラー']], { origin: `H${rowIndex}` });
+                    }
+                }
+            }
+            
+            XLSX.utils.book_append_sheet(workbook, worksheet, '発注リスト');
+            
+            const timestamp = new Date().toISOString().replace(/[-:.]/g, '').replace('T', '_');
+            XLSX.writeFile(workbook, `発注リスト_${timestamp}.xlsx`);
+
+        } catch (error) {
+            console.error('Failed to create Excel file:', error);
+            alert('Excelファイルの作成に失敗しました。');
+        } finally {
+            // Re-enable the button
+            excelExportButton.disabled = false;
+            excelExportButton.textContent = 'Excelエクスポート';
+        }
     });
 
     // Initial Load
