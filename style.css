@@ -429,6 +429,17 @@ body.cart-open #scrollTopBtn {
         padding: 15px;
     }
 
+    .search-container input,
+    .search-container select {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    #resetButton {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
     .results-container {
         grid-template-columns: 1fr;
     }
