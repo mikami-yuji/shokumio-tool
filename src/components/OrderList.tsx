@@ -322,9 +322,12 @@ export const OrderList = ({
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
       
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `order_sheet_${dateStr}.xlsx`;
+
       const link = document.createElement('a');
       link.href = url;
-      link.download = `発注書_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
