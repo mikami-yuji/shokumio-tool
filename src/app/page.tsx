@@ -177,7 +177,7 @@ export default function Home(): React.JSX.Element {
           {/* 左側: ロゴエリア */}
           <div className="app-logo-area" onClick={handleResetFilters} title="トップへ戻る">
             <h1 className="app-title">
-              幸南シール管理<span>米匠庵</span>
+              シール商品管理<span>（米匠庵）</span>
             </h1>
           </div>
 
