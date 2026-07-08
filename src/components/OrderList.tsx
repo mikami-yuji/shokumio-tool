@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Trash2, Copy, FileSpreadsheet, Download, ShoppingCart } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { OrderItem } from '../types';
 
 type OrderListProps = {
@@ -320,18 +321,12 @@ export const OrderList = ({
       // ファイルのダウンロード実行
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
       
       const dateStr = new Date().toISOString().slice(0, 10);
       const filename = `order_sheet_${dateStr}.xlsx`;
 
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // file-saver を使って確実にダウンロード保存
+      saveAs(blob, filename);
 
     } catch (error) {
       console.error('Failed to export styled excel:', error);
