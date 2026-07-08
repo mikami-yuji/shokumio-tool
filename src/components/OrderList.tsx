@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Trash2, Copy, FileSpreadsheet, Download, ShoppingCart } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { OrderItem } from '../types';
 
 type OrderListProps = {
@@ -163,32 +164,176 @@ export const OrderList = ({
     URL.revokeObjectURL(url);
   };
 
-  // Excelエクスポート
-  const handleExportExcel = (): void => {
+  // Excelエクスポート (画像付き発注書)
+  const handleExportExcel = async (): Promise<void> => {
     if (orderItems.length === 0) return;
 
-    // ヘッダー名「タイトル」でシートを作成
-    const data = orderItems.map((item) => {
-      const p = item.product;
-      return {
-        '受注№': p.juchuNo,
-        '種別': p.shubetsu,
-        '重量': p.weight,
-        '商品コード': p.productCode,
-        'タイトル': p.title || p.productName || '', // タイトルを出力
-        '形状': p.shape,
-        '材質名称': p.materialName,
-        'JANコード': p.janCode,
-        '数量': item.quantity,
-        '画像ファイル名': p.imageUrl ? `${p.juchuNo}A.jpg` : ''
-      };
-    });
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('発注書');
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, '発注リスト');
-    
-    XLSX.writeFile(workbook, `order_list_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      // 列幅の設定
+      worksheet.columns = [
+        { key: 'image', width: 16 },
+        { key: 'juchuNo', width: 14 },
+        { key: 'title', width: 32 },
+        { key: 'productName', width: 28 },
+        { key: 'weight', width: 12 },
+        { key: 'materialName', width: 22 },
+        { key: 'janCode', width: 20 },
+        { key: 'quantity', width: 15 }
+      ];
+
+      // 1. タイトルヘッダー (A1:H1 結合)
+      worksheet.mergeCells('A1:H1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = '発 注 書 (シール商品一覧)';
+      titleCell.font = { name: 'MS PGothic', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '131921' } }; // 暗いネイビー
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      worksheet.getRow(1).height = 40;
+
+      // 2. 発注メタ情報 (3行目: 日付と件数)
+      worksheet.mergeCells('A3:C3');
+      const dateCell = worksheet.getCell('A3');
+      dateCell.value = `発注日: ${new Date().toLocaleDateString('ja-JP')}`;
+      dateCell.font = { name: 'MS PGothic', size: 10, bold: true };
+      dateCell.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      worksheet.mergeCells('E3:H3');
+      const countCell = worksheet.getCell('E3');
+      const totalQty = orderItems.reduce((acc, item) => acc + item.quantity, 0);
+      countCell.value = `発注件数: ${orderItems.length}件  |  合計数量: ${totalQty.toLocaleString()}枚`;
+      countCell.font = { name: 'MS PGothic', size: 10, bold: true };
+      countCell.alignment = { vertical: 'middle', horizontal: 'right' };
+      worksheet.getRow(3).height = 20;
+
+      // 5. テーブルヘッダー
+      const headerRow = worksheet.getRow(5);
+      headerRow.height = 28;
+      const headers = ['画像', '受注№', 'タイトル', '商品名', '重量', '材質名称', 'JANコード', '数量'];
+      headers.forEach((h, idx) => {
+        const cell = headerRow.getCell(idx + 1);
+        cell.value = h;
+        cell.font = { name: 'MS PGothic', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '232F3E' } }; // サブヘッダーネイビー
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFD5D9D9' } },
+          left: { style: 'thin', color: { argb: 'FFD5D9D9' } },
+          bottom: { style: 'thin', color: { argb: 'FFD5D9D9' } },
+          right: { style: 'thin', color: { argb: 'FFD5D9D9' } }
+        };
+      });
+
+      // 画像のBase64変換ヘルパー
+      const fetchImageAsBase64 = async (url: string): Promise<string | null> => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const blob = await res.blob();
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64data = reader.result as string;
+              const base64 = base64data.split(',')[1];
+              resolve(base64);
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.error('Failed to fetch image:', e);
+          return null;
+        }
+      };
+
+      // 6. データ書き込み
+      let startRow = 6;
+      for (let i = 0; i < orderItems.length; i++) {
+        const item = orderItems[i];
+        const p = item.product;
+        const row = worksheet.getRow(startRow);
+        row.height = 80; // 画像が入るため高さを確保
+
+        // 各種値の設定
+        row.getCell(2).value = p.juchuNo;
+        row.getCell(3).value = p.title || '―';
+        row.getCell(4).value = p.productName || '―';
+        
+        // 重量のフォーマット
+        let displayWeight = p.weight || '―';
+        if (displayWeight !== '―' && !displayWeight.toLowerCase().endsWith('kg')) {
+          displayWeight = `${displayWeight}kg`;
+        }
+        row.getCell(5).value = displayWeight;
+        row.getCell(6).value = p.materialName || '―';
+        row.getCell(7).value = p.janCode || '―';
+        
+        // 数量は数値として登録
+        const qtyCell = row.getCell(8);
+        qtyCell.value = item.quantity;
+        qtyCell.numFmt = '#,##0"枚"';
+
+        // アライメントと罫線
+        for (let col = 1; col <= 8; col++) {
+          const cell = row.getCell(col);
+          cell.alignment = { vertical: 'middle', horizontal: col === 3 || col === 4 ? 'left' : 'center', wrapText: true };
+          cell.font = { name: 'MS PGothic', size: 9 };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFD5D9D9' } },
+            left: { style: 'thin', color: { argb: 'FFD5D9D9' } },
+            bottom: { style: 'thin', color: { argb: 'FFD5D9D9' } },
+            right: { style: 'thin', color: { argb: 'FFD5D9D9' } }
+          };
+        }
+
+        // 画像の処理
+        if (p.imageUrl) {
+          const base64 = await fetchImageAsBase64(p.imageUrl);
+          if (base64) {
+            try {
+              const imageId = workbook.addImage({
+                base64: base64,
+                extension: 'jpeg'
+              });
+              
+              // A列のセル内にぴったり収まるようにマージンを設定して配置
+              worksheet.addImage(imageId, {
+                tl: { col: 0.05, row: startRow - 1 + 0.05 },
+                ext: { width: 90, height: 95 }
+              });
+            } catch (err) {
+              console.error('Failed to add image to excel sheet:', err);
+              row.getCell(1).value = 'ERR IMAGE';
+            }
+          } else {
+            row.getCell(1).value = 'NO IMAGE';
+          }
+        } else {
+          row.getCell(1).value = 'NO IMAGE';
+        }
+
+        startRow++;
+      }
+
+      // ファイルのダウンロード実行
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `発注書_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Failed to export styled excel:', error);
+      alert('Excelファイルの生成中にエラーが発生しました。');
+    }
   };
 
   return (
